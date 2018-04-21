@@ -47,6 +47,25 @@ def complicatedLossFunction(var1, var2, plh1, plh2):
 
 
 
+def genPlot(list_arrays, list_ylabels):
+    if len(list_arrays) != len(list_ylabels):
+        raise ValueError("number of ylabels should match the number of arrays.")
+    
+    n_plots = len(list_arrays) 
+    # Maximum of four plots in one row. 
+    n_rows = np.ceil(n_plots / 4).astype('int')
+    
+    plt.figure(figsize=[12, 3 * n_rows])
+    for indx, (arr, ylabel) in enumerate(zip(list_arrays, list_ylabels)):
+        plt.subplot(n_rows, 4, indx + 1)
+        plt.plot(arr)
+        plt.xlabel('Steps')
+        plt.ylabel(ylabel)
+    plt.tight_layout()
+    plt.show()
+
+
+
 # Simple test case:
 # 1) Create a variable 
 # 2) Specify the loss function
@@ -153,47 +172,27 @@ lossvals2 = []
 varvals2 = []
 gradvals2 = []
 
-grads_and_vars_vals_temp, lossval_init2 = session2.run([grads_and_vars2, lossfn2],
-                                                       feed_dict={placeholder2: param2})
-gradval_init2 = grads_and_vars_vals_temp[0][0]
-varval_init2 = grads_and_vars_vals_temp[0][1]
-lossvals2.append(lossval_init2)
-varvals2.append(varval_init2)
-gradvals2.append(gradval_init2)
-
 # 5000 steps of minimization should be sufficient
 for i in range(5000):
-    # Need to supply the placeholder for the gradient calculation for the minimize op
-    session2.run(minimize_op2, feed_dict={placeholder2: param2})
-    lossval, grad_var_vals = session2.run([lossfn2, grads_and_vars2], feed_dict={placeholder2:param2})
+    lossval, grad_var_vals = session2.run([lossfn2, grads_and_vars2], 
+                                          feed_dict={placeholder2:param2})
     lossvals2.append(lossval)
     varvals2.append(grad_var_vals[0][1])
     gradvals2.append(grad_var_vals[0][0])
     
-    
     # Stop the optimization if loss is less than 1e-5
     if lossval < 1e-5:
         break
+    
+    # Need to supply the placeholder for the gradient calculation for the minimize op
+    session2.run(minimize_op2, feed_dict={placeholder2: param2})
+
 print('Initial and final values after %d steps of iteration'%len(lossvals2))
 print('Loss', lossvals2[0], '--->', lossvals2[-1])
 print('Variable', varvals2[0], '--->', varvals2[-1])
 
-# Plot the results
-plt.figure(figsize=[12,4])
-plt.subplot(1,3,1)
-plt.plot(lossvals2)
-plt.xlabel('Step')
-plt.ylabel('Loss')
-plt.subplot(1,3,2)
-plt.plot(varvals2)
-plt.xlabel('step')
-plt.ylabel('Variable value')
-plt.subplot(1,3,3)
-plt.plot(gradvals2)
-plt.xlabel('step')
-plt.ylabel('Gradient value')
-plt.tight_layout()
-plt.show()
+genPlot([lossvals2, varvals2, gradvals2],
+        ['Loss', 'Variable value', 'Gradient value'])
 
 
 
@@ -204,47 +203,25 @@ lossvals_new2 = []
 varvals_new2 = []
 gradvals_new2 = []
 
-grads_and_vars_vals_temp, lossval_init_new2 = session2.run([grads_and_vars2, lossfn2],
-                                                       feed_dict={placeholder2: param2_new})
-gradval_init_new2 = grads_and_vars_vals_temp[0][0]
-varval_init_new2 = grads_and_vars_vals_temp[0][1]
-lossvals_new2.append(lossval_init_new2)
-varvals_new2.append(varval_init_new2)
-gradvals_new2.append(gradval_init_new2)
-
 # 5000 steps of minimization should be sufficient
 for i in range(5000):
-    # Need to supply the placeholder for the gradient calculation for the minimize op
-    session2.run(minimize_op2, feed_dict={placeholder2: param2_new})
     lossval, grad_var_vals = session2.run([lossfn2, grads_and_vars2], feed_dict={placeholder2:param2_new})
     lossvals_new2.append(lossval)
     varvals_new2.append(grad_var_vals[0][1])
     gradvals_new2.append(grad_var_vals[0][0])
     
-    
     # Stop the optimization if loss is less than 1e-5
     if lossval < 1e-5:
         break
+    
+    session2.run(minimize_op2, feed_dict={placeholder2: param2_new})
+    
 print('Initial and final values after %d steps of iteration'%len(lossvals_new2))
 print('Loss', lossvals_new2[0], '--->', lossvals_new2[-1])
 print('Variable', varvals_new2[0], '--->', varvals_new2[-1])
 
-# Plot the results
-plt.figure(figsize=[12,4])
-plt.subplot(1,3,1)
-plt.plot(lossvals_new2)
-plt.xlabel('Step')
-plt.ylabel('Loss')
-plt.subplot(1,3,2)
-plt.plot(varvals_new2)
-plt.xlabel('step')
-plt.ylabel('Variable value')
-plt.subplot(1,3,3)
-plt.plot(gradvals_new2)
-plt.xlabel('step')
-plt.ylabel('Gradient value')
-plt.tight_layout()
-plt.show()
+genPlot([lossvals_new2, varvals_new2, gradvals_new2],
+        ['Loss', 'Variable value', 'Gradient value'])
 
 
 
@@ -284,18 +261,15 @@ param3 = 987
 lossvals3 = []
 varvals3 = []
 
-varval_init3, lossval_init3 = session3.run([var3, lossfn3], feed_dict={placeholder_loss3: param3})
-lossvals3.append(lossval_init3)
-varvals3.append(varval_init3)
-
 for i in range(100):
-    session3.run(minimize_op3, feed_dict={placeholder_loss3: param3})
     lossval, varval = session3.run([lossfn3, var3], feed_dict={placeholder_loss3:param3})
     lossvals3.append(lossval)
     varvals3.append(varval)
     
     if lossval < 1e-5:
         break
+    session3.run(minimize_op3, feed_dict={placeholder_loss3: param3})
+
 print('Initial and final values after %d steps of iteration'%len(lossvals3))
 print('Loss', lossvals3[0], '--->', lossvals3[-1])
 print('Variable', varvals3[0], '--->', varvals3[-1])
@@ -308,28 +282,19 @@ print('Variable', varvals3[0], '--->', varvals3[-1])
 session3.run(var_assign_op3, feed_dict={placeholder_var3:30})
 
 for i in range(5000):
-    session3.run(minimize_op3, feed_dict={placeholder_loss3: param3})
     lossval, varval = session3.run([lossfn3, var3], feed_dict={placeholder_loss3:param3})
     lossvals3.append(lossval)
     varvals3.append(varval)
     
     if lossval < 1e-5:
         break
+    session3.run(minimize_op3, feed_dict={placeholder_loss3: param3})
+
 print('Initial and final values after %d steps of iteration'%len(lossvals3))
 print('Loss', lossvals3[0], '--->', lossvals3[-1])
 print('Variable', varvals3[0], '--->', varvals3[-1])
 
-# Plot the results
-plt.figure(figsize=[8,4])
-plt.subplot(1,2,1)
-plt.plot(np.log(lossvals3))
-plt.xlabel('Step')
-plt.ylabel('Log(Loss)')
-plt.subplot(1,2,2)
-plt.plot(varvals3)
-plt.xlabel('step')
-plt.ylabel('Variable value')
-plt.show()
+genPlot([np.log(lossvals3), varvals3], ['Log(loss)', 'Variable value'])
 
 
 
@@ -362,38 +327,23 @@ session4.run(tf.global_variables_initializer())
 lossvals4 = []
 varvals4 = [] # This is now a 2d array
 
-varval_init4, lossval_init4 = session4.run([var4, lossfn4], feed_dict={placeholder_loss4: params4})
-lossvals4.append(lossval_init4)
-varvals4.append(varval_init4)
-
 for i in range(1000):
-    session4.run(minimize_op4, feed_dict={placeholder_loss4: params4})
     lossval, varval = session4.run([lossfn4, var4], feed_dict={placeholder_loss4:params4})
     lossvals4.append(lossval)
     varvals4.append(varval)
     
     if lossval < 1e-5:
         break
+    session4.run(minimize_op4, feed_dict={placeholder_loss4: params4})
+    
 print('Initial and final values after %d steps of iteration'%len(lossvals4))
 print('Loss', lossvals4[0], '--->', lossvals4[-1])
 print('Variable', varvals4[0], '--->', varvals4[-1])
 
         
-varvals4 = np.array(varvals4)
-        
-# Plot the results
-plt.figure(figsize=[18,3])
-plt.subplot(1,6,1)
-plt.plot(np.log(lossvals4))
-plt.xlabel('Step')
-plt.ylabel('Log(Loss)')
-for i in range(2, 7):
-    plt.subplot(1,6,i)
-    plt.plot(varvals4[:,i-2])
-    plt.xlabel('step')
-    plt.ylabel('Var[%d]'%(i-2))
-plt.tight_layout()
-plt.show()
+varvals4 = np.array(varvals4).T
+genPlot([np.log(lossvals4)] + [l for l in varvals4],
+        ['Log(loss)'] + ['var[%d]'%i for i in range(len(varvals4))])
 
 
 
@@ -427,41 +377,29 @@ session5.run(tf.global_variables_initializer())
 lossvals5 = []
 varvals5 = []
 
-varvals_init5, lossval_init5 = session5.run([vars5, lossfn5], feed_dict={placeholder_loss5: params5})
-lossvals5.append(lossval_init5)
-varvals5.append(varvals_init5)
-
 for i in range(1000):
-    # Alternating minimization
-    # First minimize the variable in vars5[0]
-    session5.run(min_ops5[0], feed_dict={placeholder_loss5: params5})
-    # Then minimize the variable in vars5[1]
-    session5.run(min_ops5[1], feed_dict={placeholder_loss5: params5})
     lossval, varval = session5.run([lossfn5, vars5], feed_dict={placeholder_loss5:params5})
     lossvals5.append(lossval)
     varvals5.append(varval)
     
     if lossval < 1e-5:
         break
+    
+    # Alternating minimization
+    # First minimize the variable in vars5[0]
+    session5.run(min_ops5[0], feed_dict={placeholder_loss5: params5})
+    # Then minimize the variable in vars5[1]
+    session5.run(min_ops5[1], feed_dict={placeholder_loss5: params5})
+
 print('Initial and final values after %d steps of iteration'%len(lossvals5))
 print('Loss', lossvals5[0], '--->', lossvals5[-1])
 print('Variable 1', varvals5[0][0], '--->', varvals5[-1][0])
 print('Variable 2', varvals5[0][1], '--->', varvals5[-1][1])
 varvals5 = np.array(varvals5)
         
-# Plot the results
-plt.figure(figsize=[9,3])
-plt.subplot(1,3,1)
-plt.plot(np.log(lossvals5))
-plt.xlabel('Step')
-plt.ylabel('Log(Loss)')
-for i in range(2, 4):
-    plt.subplot(1,3,i)
-    plt.plot(varvals5[:,i-2])
-    plt.xlabel('step')
-    plt.ylabel('Var[%d]'%(i-2))
-plt.tight_layout()
-plt.show()
+varvals5 = np.array(varvals5).T
+genPlot([np.log(lossvals5)] + [l for l in varvals5],
+        ['Log(loss)'] + ['var[%d]'%i for i in range(len(varvals5))])
 
 
 
