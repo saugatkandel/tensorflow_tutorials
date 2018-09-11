@@ -2,13 +2,14 @@
 # coding: utf-8
 
 
-import numpy as np
+from autograd import grad, numpy as np
 from scipy import special
 import matplotlib.pyplot as plt
 import tensorflow as tf
 from tqdm import tqdm
 import skimage, skimage.transform, skimage.data
 import skimage.feature, skimage.restoration
+import optimize
 
 
 
@@ -191,6 +192,48 @@ for indx, item in enumerate(plot_items):
     plt.title(plot_titles[indx])
 plt.tight_layout()
 plt.show()
+
+
+
+def loss(obj_guess_flat):
+    minibatch_size = 5
+    minibatch = np.random.choice(np.shape(positions)[0], size=minibatch_size)
+    obj_guess = obj_guess_flat.reshape(obj_true.shape)
+    losses_sum = 0
+    for indx in minibatch:
+        r, c = positions[indx]
+        this_diff = diff_intensites[indx]
+        exit_wave = obj_guess[r: r + probe_npix, c: c + probe_npix] * probe_true
+        exit_wave_ft = np.fft.fftshift(np.fft.fft2(exit_wave, norm='ortho'))
+        
+        loss_this = np.mean((np.sqrt(this_diff) - np.abs(exit_wave_ft))**2)
+        losses_sum += loss_this
+    return losses_sum / minibatch_size
+
+
+
+obj_guess_flat = (np.random.random(obj_true.shape) * np.exp(1j * np.pi * np.random.random(obj_true.shape))).flatten()
+
+
+
+loss_grad = lambda obj_guess_flat: np.conjugate(grad(loss)(obj_guess_flat)) 
+
+
+
+loss(obj_guess_flat)
+
+
+
+xopt = obj_guess_flat.copy()
+for i in range(10):
+    xopt = optimize.fmin_cg(f=loss, x0=xopt, fprime=loss_grad, maxiter=20)
+    mask = np.abs(xopt) > 1
+    xopt[mask] = xopt[mask] / np.abs(xopt[mask])
+    
+
+
+
+optimize.fmin_cg(f=loss, x0=xopt, fprime=loss_grad, maxiter=100, gtol=1e-8)
 
 
 
